@@ -1,11 +1,12 @@
 package config
 
 import (
-	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"time"
+
+	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -16,10 +17,11 @@ type Config struct {
 }
 
 type HTTPServer struct {
-	Address      string        `yaml:"address" env-default:"localhost:8082"`
-	ReadTimeout  time.Duration `yaml:"read_timeout" env-default:"5s"`
-	WriteTimeout time.Duration `yaml:"write_timeout" env-default:"5s"`
-	IdleTimeout  time.Duration `yaml:"idle_timeout" env-default:"30s"`
+	Address         string        `yaml:"address" env-default:"localhost:8082"`
+	ReadTimeout     time.Duration `yaml:"read_timeout" env-default:"5s"`
+	WriteTimeout    time.Duration `yaml:"write_timeout" env-default:"5s"`
+	IdleTimeout     time.Duration `yaml:"idle_timeout" env-default:"30s"`
+	ShutdownTimeout time.Duration `yaml:"shutdown_timeout" env-default:"10s"`
 }
 
 func MustLoad() *Config {
