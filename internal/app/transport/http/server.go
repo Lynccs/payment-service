@@ -3,10 +3,12 @@ package http
 import (
 	"context"
 	"fmt"
-	"github.com/Lynccs/payment-service/internal/pkg/config"
-	"github.com/gin-gonic/gin"
 	"log/slog"
 	"net/http"
+
+	"github.com/Lynccs/payment-service/internal/pkg/config"
+	"github.com/Lynccs/payment-service/internal/pkg/middleware"
+	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
@@ -17,7 +19,9 @@ type Server struct {
 }
 
 func NewServer(cfg *config.Config, log *slog.Logger) *Server {
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery())
+	r.Use(middleware.Logger(log))
 
 	srv := &http.Server{
 		Addr:         cfg.HTTPServer.Address,
