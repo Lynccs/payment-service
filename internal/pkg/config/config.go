@@ -12,7 +12,7 @@ import (
 type Config struct {
 	Env        string `yaml:"env" env-default:"local"`
 	HTTPServer `yaml:"http_server"`
-	//	TODO DataBase
+	//	TODO DataBase///////////////
 	// TODO JWT
 }
 
