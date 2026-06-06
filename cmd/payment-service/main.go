@@ -8,10 +8,13 @@ import (
 	"syscall"
 
 	"github.com/Lynccs/payment-service/internal/app"
+	"github.com/Lynccs/payment-service/internal/app/service"
 	"github.com/Lynccs/payment-service/internal/app/transport/http"
 	"github.com/Lynccs/payment-service/internal/pkg/config"
 	"github.com/Lynccs/payment-service/internal/pkg/logger"
 	"github.com/Lynccs/payment-service/internal/pkg/logger/sl"
+	"github.com/Lynccs/payment-service/internal/repository/postgres"
+	"github.com/Lynccs/payment-service/internal/services"
 )
 
 func main() {
@@ -19,7 +22,25 @@ func main() {
 	log := logger.SetupLogger(cfg.Env)
 	log.Info("initializing app", slog.String("env", cfg.Env))
 
-	srv := http.NewServer(cfg, log)
+	db, err := postgres.NewConnection(postgres.Config(cfg.Database))
+	if err != nil {
+		log.Error("Failed to connect to PostgreSQL", sl.Err(err))
+		os.Exit(1)
+	}
+	defer postgres.Close(db)
+
+	log.Info("Connected to PostgreSQL")
+
+	// Initialize repository
+	userRepo := postgres.NewUserRepo(db)
+
+	// Initialize services
+	svc := &service.Services{
+		User: services.NewUserService(userRepo),
+	}
+
+	// Initialize HTTP server with services
+	srv := http.NewServer(cfg, log, svc)
 
 	a := app.New(cfg, log, srv)
 
