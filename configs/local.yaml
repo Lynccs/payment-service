@@ -11,3 +11,6 @@ database:
   max_open_conns: 100
   max_idle_conns: 25
   conn_max_lifetime: 30m
+
+jwt:
+  ttl: 24h

@@ -25,9 +25,8 @@ func NewServer(cfg *config.Config, log *slog.Logger, services *service.Services)
 	r.Use(gin.Recovery())
 	r.Use(middleware.Logger(log))
 
-	userHandler := handlers.NewUserHandler(services.User, log)
+	userHandler := handlers.NewUserHandler(services.User, log, cfg.JWT.Secret, cfg.JWT.TTL)
 
-	// Routes
 	api := r.Group("/api")
 	{
 		auth := api.Group("/auth")
@@ -36,9 +35,10 @@ func NewServer(cfg *config.Config, log *slog.Logger, services *service.Services)
 			auth.POST("/login", userHandler.Login)
 		}
 
-		users := api.Group("/users")
+		protected := api.Group("/")
+		protected.Use(middleware.AuthRequired(cfg.JWT.Secret))
 		{
-			users.GET("/:id", userHandler.GetProfile)
+			protected.GET("/users/me", userHandler.GetMe)
 		}
 	}
 

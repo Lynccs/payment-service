@@ -13,7 +13,12 @@ type Config struct {
 	Env        string `yaml:"env" env-default:"local"`
 	HTTPServer `yaml:"http_server"`
 	Database   Database `yaml:"database"`
-	// TODO JWT
+	JWT        JWT      `yaml:"jwt"`
+}
+
+type JWT struct {
+	Secret string        `yaml:"secret" env:"JWT_SECRET" env-required:"true"`
+	TTL    time.Duration `yaml:"ttl" env-default:"24h"`
 }
 
 type HTTPServer struct {
