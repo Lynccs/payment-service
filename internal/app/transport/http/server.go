@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/Lynccs/payment-service/internal/app/service"
+	"github.com/Lynccs/payment-service/internal/app/transport/http/handlers"
 	"github.com/Lynccs/payment-service/internal/pkg/config"
 	"github.com/Lynccs/payment-service/internal/pkg/middleware"
 	"github.com/gin-gonic/gin"
@@ -18,10 +20,27 @@ type Server struct {
 	srv    *http.Server
 }
 
-func NewServer(cfg *config.Config, log *slog.Logger) *Server {
+func NewServer(cfg *config.Config, log *slog.Logger, services *service.Services) *Server {
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(middleware.Logger(log))
+
+	userHandler := handlers.NewUserHandler(services.User, log)
+
+	// Routes
+	api := r.Group("/api")
+	{
+		auth := api.Group("/auth")
+		{
+			auth.POST("/register", userHandler.Register)
+			auth.POST("/login", userHandler.Login)
+		}
+
+		users := api.Group("/users")
+		{
+			users.GET("/:id", userHandler.GetProfile)
+		}
+	}
 
 	srv := &http.Server{
 		Addr:         cfg.HTTPServer.Address,

@@ -1,0 +1,45 @@
+services:
+  payment-service:
+    image: payment-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    container_name: payment-service-api
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    environment:
+      - ENV=prod
+      - DB_HOST=postgres_db
+      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+    env_file:
+      - .env
+
+  postgres_db:
+    image: postgres:16
+    container_name: payment-postgres-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    env_file:
+      - .env
+
+volumes:
+  postgres_data:
