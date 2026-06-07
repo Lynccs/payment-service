@@ -31,15 +31,15 @@ func main() {
 
 	log.Info("Connected to PostgreSQL")
 
-	// Initialize repository
 	userRepo := postgres.NewUserRepo(db)
+	walletRepo := postgres.NewWalletRepo(db)
+	paymentRepo := postgres.NewPaymentRepo(db)
 
-	// Initialize services
 	svc := &service.Services{
-		User: services.NewUserService(userRepo),
+		User:    services.NewUserService(userRepo, walletRepo),
+		Payment: services.NewPaymentService(paymentRepo, walletRepo),
 	}
 
-	// Initialize HTTP server with services
 	srv := http.NewServer(cfg, log, svc)
 
 	a := app.New(cfg, log, srv)

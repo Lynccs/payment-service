@@ -1,0 +1,34 @@
+package repo
+
+import (
+	"context"
+	"time"
+
+	"github.com/Lynccs/payment-service/internal/app/models"
+)
+
+type PaymentFilter struct {
+	WalletID  int
+	DateFrom  time.Time
+	DateTo    time.Time
+}
+
+type DashboardStats struct {
+	Income       float64
+	Expenses     float64
+	TxCount      int
+	CategoryStats []CategoryStat
+}
+
+type CategoryStat struct {
+	CategoryName string
+	Total        float64
+}
+
+type PaymentRepository interface {
+	Create(ctx context.Context, p models.Payment) (models.Payment, error)
+	List(ctx context.Context, filter PaymentFilter, limit int) ([]models.Payment, error)
+	GetStats(ctx context.Context, filter PaymentFilter) (DashboardStats, error)
+	GetCategories(ctx context.Context, isIncome bool) ([]models.PaymentCategory, error)
+	GetMethods(ctx context.Context) ([]models.PaymentMethod, error)
+}

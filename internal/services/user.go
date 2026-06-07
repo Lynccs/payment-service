@@ -19,12 +19,14 @@ var (
 )
 
 type userService struct {
-	userRepo repo.UserRepository
+	userRepo   repo.UserRepository
+	walletRepo repo.WalletRepository
 }
 
-func NewUserService(userRepo repo.UserRepository) appsvc.UserService {
+func NewUserService(userRepo repo.UserRepository, walletRepo repo.WalletRepository) appsvc.UserService {
 	return &userService{
-		userRepo: userRepo,
+		userRepo:   userRepo,
+		walletRepo: walletRepo,
 	}
 }
 
@@ -54,9 +56,13 @@ func (s *userService) Register(ctx context.Context, req dto.RegisterRequest) (dt
 		return dto.UserResponse{}, fmt.Errorf("%s: create user: %w", op, err)
 	}
 
+	if _, err := s.walletRepo.Create(ctx, userID); err != nil {
+		return dto.UserResponse{}, fmt.Errorf("%s: create wallet: %w", op, err)
+	}
+
 	createdUser, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
-		return dto.UserResponse{}, fmt.Errorf("get created user: %w", err)
+		return dto.UserResponse{}, fmt.Errorf("%s: get created user: %w", op, err)
 	}
 
 	return dto.UserResponse{

@@ -26,6 +26,7 @@ func NewServer(cfg *config.Config, log *slog.Logger, services *service.Services)
 	r.Use(middleware.Logger(log))
 
 	userHandler := handlers.NewUserHandler(services.User, log, cfg.JWT.Secret, cfg.JWT.TTL)
+	paymentHandler := handlers.NewPaymentHandler(services.Payment, log)
 
 	r.Static("/static", "./web/static")
 	r.StaticFile("/login", "./web/templates/login.html")
@@ -43,6 +44,12 @@ func NewServer(cfg *config.Config, log *slog.Logger, services *service.Services)
 		protected.Use(middleware.AuthRequired(cfg.JWT.Secret))
 		{
 			protected.GET("/users/me", userHandler.GetMe)
+
+			protected.POST("/transactions", paymentHandler.CreateTransaction)
+			protected.GET("/transactions", paymentHandler.GetTransactions)
+			protected.GET("/dashboard/stats", paymentHandler.GetDashboardStats)
+			protected.GET("/payment-categories", paymentHandler.GetCategories)
+			protected.GET("/payment-methods", paymentHandler.GetMethods)
 		}
 	}
 
