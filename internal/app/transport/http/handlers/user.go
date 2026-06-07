@@ -96,6 +96,12 @@ func (h *UserHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
+func (h *UserHandler) Logout(c *gin.Context) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("token", "", -1, "/", "", false, true)
+	c.JSON(http.StatusOK, gin.H{"message": "logged out"})
+}
+
 func (h *UserHandler) GetMe(c *gin.Context) {
 	userID, exists := c.Get(middleware.UserIDKey)
 	if !exists {

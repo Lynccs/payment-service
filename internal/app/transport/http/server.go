@@ -31,6 +31,7 @@ func NewServer(cfg *config.Config, log *slog.Logger, services *service.Services)
 	r.Static("/static", "./web/static")
 	r.StaticFile("/login", "./web/templates/login.html")
 	r.StaticFile("/register", "./web/templates/register.html")
+	r.StaticFile("/dashboard", "./web/templates/dashboard.html")
 
 	api := r.Group("/api")
 	{
@@ -38,6 +39,7 @@ func NewServer(cfg *config.Config, log *slog.Logger, services *service.Services)
 		{
 			auth.POST("/register", userHandler.Register)
 			auth.POST("/login", userHandler.Login)
+			auth.POST("/logout", userHandler.Logout)
 		}
 
 		protected := api.Group("/")
