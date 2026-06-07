@@ -57,7 +57,7 @@ func (s *paymentService) CreateTransaction(ctx context.Context, userID int, req 
 		return dto.TransactionResponse{}, fmt.Errorf("update balance: %w", err)
 	}
 
-	return toTransactionResponse(created, nil, nil), nil
+	return paymentToResponse(created), nil
 }
 
 func (s *paymentService) GetTransactions(ctx context.Context, userID int, filter repo.PaymentFilter, limit int) ([]dto.TransactionResponse, error) {
@@ -74,7 +74,7 @@ func (s *paymentService) GetTransactions(ctx context.Context, userID int, filter
 
 	result := make([]dto.TransactionResponse, len(payments))
 	for i, p := range payments {
-		result[i] = toTransactionResponse(p, nil, nil)
+		result[i] = listItemToResponse(p)
 	}
 	return result, nil
 }
@@ -112,7 +112,13 @@ func (s *paymentService) GetCategories(ctx context.Context, isIncome bool) ([]dt
 	}
 	result := make([]dto.PaymentCategoryResponse, len(cats))
 	for i, c := range cats {
-		result[i] = dto.PaymentCategoryResponse{ID: c.ID, Name: c.Name, IsIncome: c.IsIncome}
+		result[i] = dto.PaymentCategoryResponse{
+			ID:        c.ID,
+			Name:      c.Name,
+			Icon:      c.Icon,
+			GroupName: c.GroupName,
+			IsIncome:  c.IsIncome,
+		}
 	}
 	return result, nil
 }
@@ -129,14 +135,25 @@ func (s *paymentService) GetMethods(ctx context.Context) ([]dto.PaymentMethodRes
 	return result, nil
 }
 
-func toTransactionResponse(p models.Payment, categoryName, methodName *string) dto.TransactionResponse {
+func paymentToResponse(p models.Payment) dto.TransactionResponse {
 	return dto.TransactionResponse{
 		ID:              p.ID,
 		IsIncome:        p.IsIncome,
 		Amount:          p.Amount,
-		CategoryName:    categoryName,
-		MethodName:      methodName,
 		Description:     p.Description,
 		TransactionDate: p.TransactionDate,
 	}
 }
+
+func listItemToResponse(p models.PaymentListItem) dto.TransactionResponse {
+	return dto.TransactionResponse{
+		ID:              p.ID,
+		IsIncome:        p.IsIncome,
+		Amount:          p.Amount,
+		CategoryName:    p.CategoryName,
+		MethodName:      p.MethodName,
+		Description:     p.Description,
+		TransactionDate: p.TransactionDate,
+	}
+}
+

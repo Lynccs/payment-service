@@ -31,13 +31,18 @@ func (r *PaymentRepo) Create(ctx context.Context, p models.Payment) (models.Paym
 	return p, nil
 }
 
-func (r *PaymentRepo) List(ctx context.Context, filter repo.PaymentFilter, limit int) ([]models.Payment, error) {
-	var payments []models.Payment
+func (r *PaymentRepo) List(ctx context.Context, filter repo.PaymentFilter, limit int) ([]models.PaymentListItem, error) {
+	var payments []models.PaymentListItem
 	err := r.db.SelectContext(ctx, &payments,
-		`SELECT id, wallet_id, is_income, amount, category_id, payment_method_id, description, transaction_date, created_at
-		FROM payments
-		WHERE wallet_id = $1 AND transaction_date BETWEEN $2 AND $3
-		ORDER BY transaction_date DESC
+		`SELECT p.id, p.is_income, p.amount,
+		        c.name  AS category_name,
+		        m.name  AS method_name,
+		        p.description, p.transaction_date
+		FROM payments p
+		LEFT JOIN payment_categories c ON c.id = p.category_id
+		LEFT JOIN payment_methods     m ON m.id = p.payment_method_id
+		WHERE p.wallet_id = $1 AND p.transaction_date BETWEEN $2 AND $3
+		ORDER BY p.transaction_date DESC
 		LIMIT $4`,
 		filter.WalletID, filter.DateFrom, filter.DateTo, limit,
 	)
@@ -91,7 +96,12 @@ func (r *PaymentRepo) GetStats(ctx context.Context, filter repo.PaymentFilter) (
 func (r *PaymentRepo) GetCategories(ctx context.Context, isIncome bool) ([]models.PaymentCategory, error) {
 	var cats []models.PaymentCategory
 	err := r.db.SelectContext(ctx, &cats,
-		`SELECT id, name, is_income FROM payment_categories WHERE is_income = $1 ORDER BY name`,
+		`SELECT p.id, p.name, p.icon, p.group_id,
+		        g.name AS group_name, g.is_income
+		FROM payment_categories p
+		JOIN category_groups g ON g.id = p.group_id
+		WHERE g.is_income = $1
+		ORDER BY g.id, p.name`,
 		isIncome,
 	)
 	if err != nil {

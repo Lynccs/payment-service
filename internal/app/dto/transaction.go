@@ -35,9 +35,11 @@ type CategoryStat struct {
 }
 
 type PaymentCategoryResponse struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	IsIncome bool   `json:"is_income"`
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	Icon      string `json:"icon"`
+	GroupName string `json:"group_name"`
+	IsIncome  bool   `json:"is_income"`
 }
 
 type PaymentMethodResponse struct {

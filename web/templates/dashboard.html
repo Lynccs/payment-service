@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Дашборд — Finio</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link href="/static/css/dashboard.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet"/>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="finio-nav">
+    <a class="finio-brand" href="/dashboard">
+      <i class="bi bi-wallet2"></i>Finio
+    </a>
+    <div class="d-flex align-items-center gap-3 me-auto ms-4">
+      <a href="/dashboard" class="nav-link-item" id="navDashboard">Дашборд</a>
+      <a href="#transactions" class="nav-link-item" id="navTransactions">Транзакції</a>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <span class="nav-user-email" id="userEmail"></span>
+      <button id="logoutBtn" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-box-arrow-right me-1"></i>Вийти
+      </button>
+    </div>
+  </nav>
+
+  <main class="container-xl px-3 px-md-4 py-4">
+
+    <!-- Page header -->
+    <div class="mb-4">
+      <h5 class="fw-semibold mb-0">Дашборд</h5>
+    </div>
+
+    <!-- Date filter -->
+    <div class="filter-bar d-flex flex-wrap align-items-center gap-3 mb-4 py-2 px-3">
+      <div class="btn-group" role="group" aria-label="Пресети фільтру">
+        <button class="btn btn-sm preset-btn" data-preset="week">Тиждень</button>
+        <button class="btn btn-sm preset-btn active" data-preset="month">Місяць</button>
+        <button class="btn btn-sm preset-btn" data-preset="3months">3 місяці</button>
+        <button class="btn btn-sm preset-btn" data-preset="year">Рік</button>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-calendar-range text-muted" style="font-size:.85rem"></i>
+        <input id="datepicker" type="text" class="form-control form-control-sm date-input"
+               placeholder="Кастомний діапазон" readonly/>
+      </div>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-xl-3">
+        <div class="stat-card stat-balance">
+          <div class="stat-icon"><i class="bi bi-wallet2"></i></div>
+          <div>
+            <div class="stat-label">Баланс</div>
+            <div class="stat-value" id="statBalance">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-xl-3">
+        <div class="stat-card stat-income">
+          <div class="stat-icon"><i class="bi bi-arrow-down-circle-fill"></i></div>
+          <div>
+            <div class="stat-label">Доходи</div>
+            <div class="stat-value" id="statIncome">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-xl-3">
+        <div class="stat-card stat-expenses">
+          <div class="stat-icon"><i class="bi bi-arrow-up-circle-fill"></i></div>
+          <div>
+            <div class="stat-label">Витрати</div>
+            <div class="stat-value" id="statExpenses">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-xl-3">
+        <div class="stat-card stat-txcount">
+          <div class="stat-icon"><i class="bi bi-receipt"></i></div>
+          <div>
+            <div class="stat-label">Транзакцій</div>
+            <div class="stat-value" id="statCount">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panels row -->
+    <div class="row g-4" id="transactions">
+
+      <!-- Category breakdown -->
+      <div class="col-12 col-lg-6">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Витрати за категоріями</span>
+          </div>
+          <div class="panel-body" id="categoriesBlock">
+            <div class="text-muted small text-center py-3">Завантаження...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent transactions -->
+      <div class="col-12 col-lg-6">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="d-flex align-items-center gap-2">
+              <span class="panel-title">Останні транзакції</span>
+              <span class="badge rounded-pill text-bg-secondary" id="txBadge">0</span>
+            </div>
+            <a href="/transactions" class="panel-link">
+              Всі транзакції<i class="bi bi-arrow-right ms-1"></i>
+            </a>
+          </div>
+          <div id="transactionsBlock">
+            <div class="text-muted small text-center py-3">Завантаження...</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Floating action button -->
+  <button class="btn btn-primary fab" data-bs-toggle="modal" data-bs-target="#txModal">
+    <i class="bi bi-plus-lg me-1"></i>Додати транзакцію
+  </button>
+
+  <!-- Add transaction modal -->
+  <div class="modal fade" id="txModal" tabindex="-1" aria-labelledby="txModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h6 class="modal-title fw-semibold" id="txModalLabel">Нова транзакція</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрити"></button>
+        </div>
+
+        <div class="modal-body">
+          <div id="txAlert" class="alert d-none mb-3" role="alert"></div>
+
+          <form id="txForm" novalidate>
+
+            <!-- Type toggle -->
+            <div class="mb-3">
+              <div class="btn-group w-100" role="group" aria-label="Тип транзакції">
+                <input type="radio" class="btn-check" name="txType" id="typeExpense" value="false" checked/>
+                <label class="btn btn-outline-danger" for="typeExpense">
+                  <i class="bi bi-arrow-up-circle me-1"></i>Витрата
+                </label>
+                <input type="radio" class="btn-check" name="txType" id="typeIncome" value="true"/>
+                <label class="btn btn-outline-success" for="typeIncome">
+                  <i class="bi bi-arrow-down-circle me-1"></i>Дохід
+                </label>
+              </div>
+            </div>
+
+            <!-- Amount -->
+            <div class="mb-3">
+              <label for="txAmount" class="form-label">Сума (₴)</label>
+              <input type="number" class="form-control" id="txAmount"
+                     min="0.01" step="10" placeholder="0.00"/>
+              <div class="invalid-feedback">Введіть коректну суму</div>
+            </div>
+
+            <!-- Category -->
+            <div class="mb-3">
+              <label for="txCategory" class="form-label">Категорія</label>
+              <select id="txCategory"></select>
+              <div class="invalid-feedback">Оберіть категорію</div>
+            </div>
+
+            <!-- Payment method -->
+            <div class="mb-3">
+              <label for="txMethod" class="form-label">Тип платежу</label>
+              <select id="txMethod"></select>
+              <div class="invalid-feedback">Оберіть тип платежу</div>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-3">
+              <label for="txDesc" class="form-label">
+                Опис <small class="text-muted">(необов'язково)</small>
+              </label>
+              <input type="text" class="form-control" id="txDesc"
+                     placeholder="Наприклад: обід у кафе"/>
+            </div>
+
+            <!-- Date -->
+            <div class="mb-1">
+              <label for="txDate" class="form-label">Дата</label>
+              <div class="input-group">
+                <span class="input-group-text modal-date-icon"><i class="bi bi-calendar3"></i></span>
+                <input type="text" class="form-control" id="txDate" placeholder="ДД.ММ.РРРР" readonly/>
+                <div class="invalid-feedback">Оберіть дату</div>
+              </div>
+            </div>
+
+          </form>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Скасувати</button>
+          <button type="button" class="btn btn-primary" id="txSubmit">
+            Додати
+            <span id="txSpinner" class="spinner-border spinner-border-sm d-none ms-1"></span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
+  <script>
+    'use strict';
+
+    /* ── state ───────────────────────────────────── */
+
+    let filter = { preset: 'month' };
+    let picker;
+    let pickerModal = null;
+    let tsCategory  = null;
+    let tsMethod    = null;
+
+    /* ── helpers ─────────────────────────────────── */
+
+    function esc(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function fmt(n) {
+      return '₴ ' + Number(n).toLocaleString('uk-UA', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
+
+    function fmtDate(str) {
+      const d = new Date(str);
+      return d.toLocaleDateString('uk-UA', { day: '2-digit', month: 'short', year: 'numeric' })
+        + ', ' + d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function buildParams() {
+      if (filter.preset) return 'preset=' + filter.preset;
+      return 'date_from=' + filter.date_from + '&date_to=' + filter.date_to;
+    }
+
+    /* ── bootstrap / auth check ──────────────────── */
+
+    async function init() {
+      try {
+        const res = await fetch('/api/users/me');
+        if (res.status === 401) { location.href = '/login'; return; }
+        const user = await res.json();
+        document.getElementById('userEmail').textContent = user.email;
+
+        const path = window.location.pathname;
+        if (path === '/dashboard') document.getElementById('navDashboard').classList.add('active');
+      } catch {
+        location.href = '/login';
+        return;
+      }
+
+      initPicker();
+      initPresetBtns();
+      initLogout();
+      initModal();
+
+      await loadAll();
+    }
+
+    /* ── litepicker ──────────────────────────────── */
+
+    function initPicker() {
+      picker = new Litepicker({
+        element: document.getElementById('datepicker'),
+        singleMode: false,
+        format: 'DD.MM.YYYY',
+        numberOfMonths: 2,
+        numberOfColumns: 2,
+        lang: 'uk-UA',
+        resetButton: false,
+      });
+
+      picker.on('selected', function (d1, d2) {
+        filter = {
+          date_from: d1.format('YYYY-MM-DD'),
+          date_to:   d2.format('YYYY-MM-DD'),
+        };
+        document.querySelectorAll('.preset-btn').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        loadAll();
+      });
+    }
+
+    /* ── preset buttons ──────────────────────────── */
+
+    function initPresetBtns() {
+      document.querySelectorAll('.preset-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.preset-btn').forEach(function (b) {
+            b.classList.remove('active');
+          });
+          btn.classList.add('active');
+          filter = { preset: btn.dataset.preset };
+          picker.clearSelection();
+          document.getElementById('datepicker').value = '';
+          loadAll();
+        });
+      });
+    }
+
+    /* ── logout ──────────────────────────────────── */
+
+    function initLogout() {
+      document.getElementById('logoutBtn').addEventListener('click', async function () {
+        await fetch('/api/auth/logout', { method: 'POST' }).catch(function () {});
+        location.href = '/login';
+      });
+    }
+
+    /* ── data loading ────────────────────────────── */
+
+    async function loadAll() {
+      await Promise.all([loadStats(), loadTransactions()]);
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/dashboard/stats?' + buildParams());
+        if (!res.ok) return;
+        const d = await res.json();
+
+        document.getElementById('statBalance').textContent  = fmt(d.balance);
+        document.getElementById('statIncome').textContent   = fmt(d.income);
+        document.getElementById('statExpenses').textContent = fmt(d.expenses);
+        document.getElementById('statCount').textContent    = d.tx_count;
+
+        renderCategories((d.category_stats || []).slice(0, 5));
+      } catch (e) {
+        console.error('loadStats:', e);
+      }
+    }
+
+    async function loadTransactions() {
+      try {
+        const res = await fetch('/api/transactions?' + buildParams());
+        if (!res.ok) return;
+        const txs = await res.json();
+
+        document.getElementById('txBadge').textContent = txs.length;
+        renderTransactions(txs.slice(0, 5));
+      } catch (e) {
+        console.error('loadTransactions:', e);
+      }
+    }
+
+    /* ── rendering ───────────────────────────────── */
+
+    var CAT_COLORS = [
+      ['#059669', '#34d399'],
+      ['#2563eb', '#60a5fa'],
+      ['#d97706', '#fbbf24'],
+      ['#7c3aed', '#a78bfa'],
+      ['#db2777', '#f472b6'],
+      ['#0f766e', '#2dd4bf'],
+      ['#ea580c', '#fb923c'],
+      ['#4f46e5', '#818cf8'],
+      ['#0891b2', '#22d3ee'],
+      ['#65a30d', '#a3e635'],
+    ];
+
+    function renderCategories(stats) {
+      const el = document.getElementById('categoriesBlock');
+      if (!stats.length) {
+        el.innerHTML = '<p class="text-muted small text-center py-3 mb-0">Немає витрат за обраний період</p>';
+        return;
+      }
+      const max = Math.max.apply(null, stats.map(function (s) { return Number(s.total); }));
+      el.innerHTML = stats.map(function (s, i) {
+        const pct   = max > 0 ? Math.round((Number(s.total) / max) * 100) : 0;
+        const pair = CAT_COLORS[i % CAT_COLORS.length];
+        const grad = 'linear-gradient(90deg,' + pair[1] + ',' + pair[0] + ')';
+        return '<div class="cat-item">'
+          + '<div class="cat-row">'
+          + '<span class="cat-name">' + esc(s.category_name) + '</span>'
+          + '<span class="cat-amt">' + fmt(s.total) + '</span>'
+          + '</div>'
+          + '<div class="cat-bar"><div class="cat-bar-fill" style="width:' + pct + '%;background:' + grad + '"></div></div>'
+          + '</div>';
+      }).join('');
+    }
+
+    function renderTransactions(txs) {
+      const el = document.getElementById('transactionsBlock');
+      if (!txs.length) {
+        el.innerHTML = '<p class="text-muted small text-center py-3 mb-0">Немає транзакцій за обраний період</p>';
+        return;
+      }
+      el.innerHTML = txs.map(function (t) {
+        const cls   = t.is_income ? 'income' : 'expense';
+        const icon  = t.is_income ? 'bi-arrow-down-circle-fill' : 'bi-arrow-up-circle-fill';
+        const sign  = t.is_income ? '+' : '−';
+        const title = esc(t.category_name || '—');
+        const metaParts = [];
+        if (t.method_name) metaParts.push(esc(t.method_name));
+        metaParts.push(fmtDate(t.transaction_date));
+        const meta = metaParts.join(' · ');
+        return '<div class="tx-item">'
+          + '<div class="tx-icon ' + cls + '"><i class="bi ' + icon + '"></i></div>'
+          + '<div class="tx-body">'
+          + '<div class="tx-title">' + title + '</div>'
+          + '<div class="tx-meta">'  + meta  + '</div>'
+          + '</div>'
+          + '<div class="tx-amount ' + cls + '">' + sign + fmt(t.amount) + '</div>'
+          + '</div>';
+      }).join('');
+    }
+
+    /* ── modal ───────────────────────────────────── */
+
+    function initModal() {
+      const modal = document.getElementById('txModal');
+
+      tsCategory = new TomSelect('#txCategory', {
+        create: false,
+        maxOptions: null,
+        placeholder: 'Обрати',
+        allowEmptyOption: false,
+        onFocus: function () { tsCategory.wrapper.classList.remove('is-invalid'); },
+        render: {
+          optgroup_header: function(data, escape) {
+            return '<div class="ts-group-header"><span>' + escape(data.label) + '</span></div>';
+          },
+        },
+      });
+      tsCategory.control_input.addEventListener('beforeinput', function(e) {
+        if (!e.data) return;
+        if (!/^[\p{L}\s,.?!:]+$/u.test(e.data)) e.preventDefault();
+      });
+
+      tsMethod = new TomSelect('#txMethod', {
+        create: false,
+        placeholder: 'Обрати',
+        allowEmptyOption: false,
+        onFocus: function () { tsMethod.wrapper.classList.remove('is-invalid'); },
+      });
+
+      pickerModal = new Litepicker({
+        element: document.getElementById('txDate'),
+        singleMode: true,
+        format: 'DD.MM.YYYY',
+        lang: 'uk-UA',
+        numberOfMonths: 1,
+        numberOfColumns: 1,
+        resetButton: false,
+        autoApply: true,
+      });
+
+      modal.addEventListener('show.bs.modal', function () {
+        document.getElementById('txAlert').className = 'alert d-none';
+        tsCategory.wrapper.classList.remove('is-invalid');
+        tsMethod.wrapper.classList.remove('is-invalid');
+        document.querySelectorAll('#txForm .is-invalid').forEach(function (el) {
+          el.classList.remove('is-invalid');
+        });
+        pickerModal.setDate(new Date());
+      });
+
+      modal.addEventListener('shown.bs.modal', async function () {
+        await Promise.all([loadCategories(false), loadMethods()]);
+      });
+
+      document.querySelectorAll('[name="txType"]').forEach(function (r) {
+        r.addEventListener('change', function (e) {
+          loadCategories(e.target.value === 'true');
+        });
+      });
+
+      document.getElementById('txSubmit').addEventListener('click', submitTransaction);
+    }
+
+    async function loadCategories(isIncome) {
+      tsCategory.disable();
+      tsCategory.clear(true);
+      tsCategory.clearOptions();
+      try {
+        const res  = await fetch('/api/payment-categories?is_income=' + isIncome);
+        const cats = await res.json();
+        const groups = {};
+        cats.forEach(function (c) {
+          if (!groups[c.group_name]) groups[c.group_name] = [];
+          groups[c.group_name].push(c);
+        });
+        Object.keys(groups).forEach(function (groupName) {
+          tsCategory.addOptionGroup(groupName, { label: groupName });
+          groups[groupName].forEach(function (c) {
+            const prefix = c.icon ? c.icon + ' ' : '';
+            tsCategory.addOption({ value: String(c.id), text: prefix + c.name, optgroup: groupName });
+          });
+        });
+      } catch (e) {
+        console.error('loadCategories:', e);
+      }
+      tsCategory.enable();
+    }
+
+    async function loadMethods() {
+      tsMethod.disable();
+      tsMethod.clear(true);
+      tsMethod.clearOptions();
+      try {
+        const res     = await fetch('/api/payment-methods');
+        const methods = await res.json();
+        methods.forEach(function (m) {
+          tsMethod.addOption({ value: String(m.id), text: m.name });
+        });
+      } catch (e) {
+        console.error('loadMethods:', e);
+      }
+      tsMethod.enable();
+    }
+
+    async function submitTransaction() {
+      const alertEl = document.getElementById('txAlert');
+      alertEl.className = 'alert d-none';
+      document.querySelectorAll('#txForm .is-invalid').forEach(function (el) {
+        el.classList.remove('is-invalid');
+      });
+      tsCategory.wrapper.classList.remove('is-invalid');
+      tsMethod.wrapper.classList.remove('is-invalid');
+
+      const isIncome  = document.querySelector('[name="txType"]:checked').value === 'true';
+      const amountVal = document.getElementById('txAmount').value;
+      const catVal    = tsCategory.getValue();
+      const methVal   = tsMethod.getValue();
+      const descVal   = document.getElementById('txDesc').value.trim();
+      const dateVal   = pickerModal.getDate();
+
+      const amount = parseFloat(amountVal);
+      let valid = true;
+
+      if (!amountVal || isNaN(amount) || amount <= 0) {
+        document.getElementById('txAmount').classList.add('is-invalid');
+        valid = false;
+      }
+      if (!catVal) {
+        tsCategory.wrapper.classList.add('is-invalid');
+        valid = false;
+      }
+      if (!methVal) {
+        tsMethod.wrapper.classList.add('is-invalid');
+        valid = false;
+      }
+      if (!dateVal) {
+        document.getElementById('txDate').classList.add('is-invalid');
+        valid = false;
+      }
+      if (!valid) return;
+
+      const btn     = document.getElementById('txSubmit');
+      const spinner = document.getElementById('txSpinner');
+      btn.disabled = true;
+      spinner.classList.remove('d-none');
+
+      try {
+        const txDate = new Date(dateVal.format('YYYY-MM-DD') + 'T12:00:00');
+        const res = await fetch('/api/transactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            is_income:          isIncome,
+            amount:             amount,
+            category_id:        parseInt(catVal, 10),
+            payment_method_id:  parseInt(methVal, 10),
+            description:        descVal,
+            transaction_date:   txDate.toISOString(),
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(function () { return {}; });
+          alertEl.className = 'alert alert-danger';
+          alertEl.textContent = err.error || 'Помилка при збереженні транзакції';
+          return;
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('txModal')).hide();
+        await loadAll();
+
+      } catch {
+        alertEl.className = 'alert alert-danger';
+        alertEl.textContent = "Помилка з'єднання з сервером";
+      } finally {
+        btn.disabled = false;
+        spinner.classList.add('d-none');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

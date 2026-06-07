@@ -27,7 +27,7 @@ type CategoryStat struct {
 
 type PaymentRepository interface {
 	Create(ctx context.Context, p models.Payment) (models.Payment, error)
-	List(ctx context.Context, filter PaymentFilter, limit int) ([]models.Payment, error)
+	List(ctx context.Context, filter PaymentFilter, limit int) ([]models.PaymentListItem, error)
 	GetStats(ctx context.Context, filter PaymentFilter) (DashboardStats, error)
 	GetCategories(ctx context.Context, isIncome bool) ([]models.PaymentCategory, error)
 	GetMethods(ctx context.Context) ([]models.PaymentMethod, error)
