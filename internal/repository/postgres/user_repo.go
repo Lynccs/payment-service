@@ -58,7 +58,7 @@ func (r *UserRepo) GetByID(ctx context.Context, id int) (models.User, error) {
 
 func (r *UserRepo) GetByEmail(ctx context.Context, email string) (models.User, error) {
 	op := "UserRepo.GetByEmail"
-	query := `SELECT id, email, created_at FROM users WHERE email = $1`
+	query := `SELECT id, email, password_hash, created_at FROM users WHERE email = $1`
 
 	var user models.User
 	err := r.db.GetContext(ctx, &user, query, email)

@@ -27,6 +27,10 @@ func NewServer(cfg *config.Config, log *slog.Logger, services *service.Services)
 
 	userHandler := handlers.NewUserHandler(services.User, log, cfg.JWT.Secret, cfg.JWT.TTL)
 
+	r.Static("/static", "./web/static")
+	r.StaticFile("/login", "./web/templates/login.html")
+	r.StaticFile("/register", "./web/templates/register.html")
+
 	api := r.Group("/api")
 	{
 		auth := api.Group("/auth")
