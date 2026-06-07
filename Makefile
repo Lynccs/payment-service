@@ -2,6 +2,7 @@ include .env
 export
 
 DB_URL := postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
+LOCAL_DB_URL := postgres://$(DB_USER):$(DB_PASSWORD)@host.docker.internal:$(DB_PORT)/$(DB_NAME)?sslmode=disable
 
 ##@ Migrations
 
@@ -15,12 +16,22 @@ migrate-create: ## Create new migration (make migrate-create name=add_users)
 	migrate create -ext sql -dir migrations -seq $(name)
 
 .PHONY: migrate-up
-migrate-up: ## Apply all migrations
+migrate-up: ## Apply all migrations (requires payment-service container running)
 	docker-compose exec payment-service migrate -path migrations -database "$(DB_URL)" up
 
+.PHONY: migrate-up-local
+migrate-up-local: ## Apply all migrations (local dev — postgres in Docker)
+	docker run --rm -v "$(CURDIR)/migrations:/migrations" migrate/migrate \
+		-path=/migrations -database "$(LOCAL_DB_URL)" up
+
 .PHONY: migrate-down
-migrate-down: ## Rollback last migration
+migrate-down: ## Rollback last migration (requires payment-service container running)
 	docker-compose exec payment-service migrate -path migrations -database "$(DB_URL)" down 1
+
+.PHONY: migrate-down-local
+migrate-down-local: ## Rollback last migration (local dev)
+	docker run --rm -v "$(CURDIR)/migrations:/migrations" migrate/migrate \
+		-path=/migrations -database "$(LOCAL_DB_URL)" down 1
 
 .PHONY: migrate-status
 migrate-status: ## Show current migration version

@@ -23,6 +23,7 @@ RUN apk add --no-cache curl \
 COPY --from=builder /app/payment-service .
 COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/configs ./configs
+COPY --from=builder /app/web ./web
 
 EXPOSE 8082
 
