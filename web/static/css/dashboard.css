@@ -158,6 +158,24 @@ body {
   white-space: nowrap;
 }
 
+.btn-reconcile {
+  background: none;
+  border: none;
+  color: #d1d5db;
+  padding: 0.2rem 0.3rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: color .15s, background .15s;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.btn-reconcile:hover {
+  color: #059669;
+  background: #ecfdf5;
+}
+
 /* ── Panels ──────────────────────────────── */
 
 .panel {

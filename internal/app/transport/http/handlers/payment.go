@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -49,21 +50,100 @@ func (h *PaymentHandler) GetTransactions(c *gin.Context) {
 		return
 	}
 
-	limit := 50
+	limit := 10
 	if l := c.Query("limit"); l != "" {
 		if v, err := strconv.Atoi(l); err == nil && v > 0 {
 			limit = v
 		}
 	}
 
-	txs, err := h.svc.GetTransactions(c.Request.Context(), userID, filter, limit)
+	page := 1
+	if p := c.Query("page"); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 {
+			page = v
+		}
+	}
+	filter.Offset = (page - 1) * limit
+
+	if cat := c.Query("category"); cat != "" {
+		if v, err := strconv.Atoi(cat); err == nil {
+			filter.CategoryID = &v
+		}
+	}
+
+	if t := c.Query("type"); t == "income" || t == "expense" {
+		isIncome := t == "income"
+		filter.IsIncome = &isIncome
+	}
+
+	if m := c.Query("method"); m != "" {
+		if v, err := strconv.Atoi(m); err == nil {
+			filter.MethodID = &v
+		}
+	}
+
+	filter.Search = c.Query("search")
+	filter.ExcludeSystem = c.Query("exclude_system") == "true"
+
+	result, err := h.svc.GetTransactions(c.Request.Context(), userID, filter, limit)
 	if err != nil {
 		h.log.Error("get transactions", sl.Err(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
 
-	c.JSON(http.StatusOK, txs)
+	c.JSON(http.StatusOK, result)
+}
+
+func (h *PaymentHandler) UpdateTransaction(c *gin.Context) {
+	userID := c.GetInt(middleware.UserIDKey)
+
+	txID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	var req dto.UpdateTransactionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	resp, err := h.svc.UpdateTransaction(c.Request.Context(), userID, txID, req)
+	if err != nil {
+		if errors.Is(err, repo.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "transaction not found"})
+			return
+		}
+		h.log.Error("update transaction", sl.Err(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+func (h *PaymentHandler) DeleteTransaction(c *gin.Context) {
+	userID := c.GetInt(middleware.UserIDKey)
+
+	txID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	if err := h.svc.DeleteTransaction(c.Request.Context(), userID, txID); err != nil {
+		if errors.Is(err, repo.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "transaction not found"})
+			return
+		}
+		h.log.Error("delete transaction", sl.Err(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 func (h *PaymentHandler) GetDashboardStats(c *gin.Context) {
@@ -94,6 +174,24 @@ func (h *PaymentHandler) GetCategories(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, cats)
+}
+
+func (h *PaymentHandler) ReconcileBalance(c *gin.Context) {
+	userID := c.GetInt(middleware.UserIDKey)
+
+	var req dto.ReconcileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	if err := h.svc.ReconcileBalance(c.Request.Context(), userID, req.TargetBalance); err != nil {
+		h.log.Error("reconcile balance", sl.Err(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 func (h *PaymentHandler) GetMethods(c *gin.Context) {
@@ -136,7 +234,7 @@ func parseDateFilter(c *gin.Context) (repo.PaymentFilter, bool) {
 		dateFrom = now.AddDate(0, -3, 0)
 	case "year":
 		dateFrom = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location())
-	default: // "month" і будь-що інше
+	default:
 		dateFrom = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 	}
 

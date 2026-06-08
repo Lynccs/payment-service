@@ -32,6 +32,7 @@ func NewServer(cfg *config.Config, log *slog.Logger, services *service.Services)
 	r.StaticFile("/login", "./web/templates/login.html")
 	r.StaticFile("/register", "./web/templates/register.html")
 	r.StaticFile("/dashboard", "./web/templates/dashboard.html")
+	r.StaticFile("/transactions", "./web/templates/transactions.html")
 
 	api := r.Group("/api")
 	{
@@ -49,9 +50,12 @@ func NewServer(cfg *config.Config, log *slog.Logger, services *service.Services)
 
 			protected.POST("/transactions", paymentHandler.CreateTransaction)
 			protected.GET("/transactions", paymentHandler.GetTransactions)
+			protected.PUT("/transactions/:id", paymentHandler.UpdateTransaction)
+			protected.DELETE("/transactions/:id", paymentHandler.DeleteTransaction)
 			protected.GET("/dashboard/stats", paymentHandler.GetDashboardStats)
 			protected.GET("/payment-categories", paymentHandler.GetCategories)
 			protected.GET("/payment-methods", paymentHandler.GetMethods)
+			protected.POST("/wallet/reconcile", paymentHandler.ReconcileBalance)
 		}
 	}
 

@@ -18,7 +18,10 @@ type PaymentListItem struct {
 	ID              int       `db:"id"`
 	IsIncome        bool      `db:"is_income"`
 	Amount          float64   `db:"amount"`
+	CategoryID      *int      `db:"category_id"`
 	CategoryName    *string   `db:"category_name"`
+	CategoryIcon    *string   `db:"category_icon"`
+	PaymentMethodID *int      `db:"payment_method_id"`
 	MethodName      *string   `db:"method_name"`
 	Description     *string   `db:"description"`
 	TransactionDate time.Time `db:"transaction_date"`
