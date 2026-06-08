@@ -50,6 +50,7 @@ func NewServer(cfg *config.Config, log *slog.Logger, services *service.Services)
 
 			protected.POST("/transactions", paymentHandler.CreateTransaction)
 			protected.GET("/transactions", paymentHandler.GetTransactions)
+			protected.GET("/transactions/export", paymentHandler.ExportTransactionsCSV)
 			protected.PUT("/transactions/:id", paymentHandler.UpdateTransaction)
 			protected.DELETE("/transactions/:id", paymentHandler.DeleteTransaction)
 			protected.GET("/dashboard/stats", paymentHandler.GetDashboardStats)
