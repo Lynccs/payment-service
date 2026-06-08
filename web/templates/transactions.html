@@ -33,9 +33,14 @@
     <!-- Page header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h5 class="fw-semibold mb-0">Транзакції</h5>
-      <button class="btn btn-primary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#txModal">
-        <i class="bi bi-plus-lg me-1"></i>Додати транзакцію
-      </button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm px-3" id="exportCsvBtn">
+          <i class="bi bi-download me-1"></i>Експорт CSV
+        </button>
+        <button class="btn btn-primary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#txModal">
+          <i class="bi bi-plus-lg me-1"></i>Додати транзакцію
+        </button>
+      </div>
     </div>
 
     <!-- Filter bar -->
@@ -247,6 +252,21 @@
       return p.toString();
     }
 
+    function buildExportParams() {
+      const p = new URLSearchParams();
+      if (S.dateFrom) {
+        p.set('date_from', S.dateFrom);
+        p.set('date_to',   S.dateTo);
+      } else {
+        p.set('preset', S.preset);
+      }
+      if (S.category) p.set('category', S.category);
+      if (S.type)     p.set('type', S.type);
+      if (S.method)   p.set('method', S.method);
+      if (S.search)   p.set('search', S.search);
+      return p.toString();
+    }
+
     /* ── init ────────────────────────────────────── */
 
     async function init() {
@@ -266,6 +286,7 @@
       initFilterDropdowns();
       initSearch();
       initLogout();
+      initExportCsv();
       initAddModal();
       initEditButton();
       initDeleteModal();
@@ -336,6 +357,14 @@
         searchTimer = setTimeout(function() {
           S.search = val; S.page = 1; loadTransactions();
         }, 400);
+      });
+    }
+
+    /* ── export csv ─────────────────────────────── */
+
+    function initExportCsv() {
+      document.getElementById('exportCsvBtn').addEventListener('click', function() {
+        window.location.href = '/api/transactions/export?' + buildExportParams();
       });
     }
 

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/csv"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -192,6 +193,71 @@ func (h *PaymentHandler) ReconcileBalance(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+func (h *PaymentHandler) ExportTransactionsCSV(c *gin.Context) {
+	userID := c.GetInt(middleware.UserIDKey)
+	filter, ok := parseDateFilter(c)
+	if !ok {
+		return
+	}
+
+	if cat := c.Query("category"); cat != "" {
+		if v, err := strconv.Atoi(cat); err == nil {
+			filter.CategoryID = &v
+		}
+	}
+	if t := c.Query("type"); t == "income" || t == "expense" {
+		isIncome := t == "income"
+		filter.IsIncome = &isIncome
+	}
+	if m := c.Query("method"); m != "" {
+		if v, err := strconv.Atoi(m); err == nil {
+			filter.MethodID = &v
+		}
+	}
+	filter.Search = c.Query("search")
+
+	result, err := h.svc.GetTransactions(c.Request.Context(), userID, filter, 100000)
+	if err != nil {
+		h.log.Error("export transactions csv", sl.Err(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	c.Header("Content-Type", "text/csv; charset=utf-8")
+	c.Header("Content-Disposition", `attachment; filename="transactions.csv"`)
+
+	// UTF-8 BOM for correct Excel rendering
+	c.Writer.Write([]byte{0xEF, 0xBB, 0xBF})
+
+	w := csv.NewWriter(c.Writer)
+	_ = w.Write([]string{"Дата", "Категорія", "Тип транзакції", "Тип платіжу", "Опис", "Сума"})
+	for _, tx := range result.Data {
+		txType := "Витрата"
+		if tx.IsIncome {
+			txType = "Дохід"
+		}
+		cat, method, desc := "", "", ""
+		if tx.CategoryName != nil {
+			cat = *tx.CategoryName
+		}
+		if tx.MethodName != nil {
+			method = *tx.MethodName
+		}
+		if tx.Description != nil {
+			desc = *tx.Description
+		}
+		_ = w.Write([]string{
+			tx.TransactionDate.Format("02.01.2006"),
+			cat,
+			txType,
+			method,
+			desc,
+			strconv.FormatFloat(tx.Amount, 'f', 2, 64),
+		})
+	}
+	w.Flush()
 }
 
 func (h *PaymentHandler) GetMethods(c *gin.Context) {
