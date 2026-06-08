@@ -18,7 +18,7 @@
     </a>
     <div class="d-flex align-items-center gap-3 me-auto ms-4">
       <a href="/dashboard" class="nav-link-item" id="navDashboard">Дашборд</a>
-      <a href="#transactions" class="nav-link-item" id="navTransactions">Транзакції</a>
+      <a href="/transactions" class="nav-link-item" id="navTransactions">Транзакції</a>
     </div>
     <div class="d-flex align-items-center gap-3">
       <span class="nav-user-email" id="userEmail"></span>
@@ -55,9 +55,14 @@
       <div class="col-6 col-xl-3">
         <div class="stat-card stat-balance">
           <div class="stat-icon"><i class="bi bi-wallet2"></i></div>
-          <div>
+          <div class="flex-grow-1">
             <div class="stat-label">Баланс</div>
-            <div class="stat-value" id="statBalance">—</div>
+            <div class="d-flex align-items-center gap-2">
+              <div class="stat-value" id="statBalance">—</div>
+              <button class="btn-reconcile" id="reconcileBtn" title="Скоригувати баланс">
+                <i class="bi bi-pencil"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -216,6 +221,33 @@
     </div>
   </div>
 
+  <!-- Reconcile modal -->
+  <div class="modal fade" id="reconcileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title fw-semibold">Скоригувати баланс</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрити"></button>
+        </div>
+        <div class="modal-body">
+          <div id="reconcileAlert" class="alert d-none mb-3" role="alert"></div>
+          <p class="text-muted small mb-3">Поточний баланс: <strong id="reconcileCurrentBalance">—</strong></p>
+          <label for="reconcileAmount" class="form-label">Реальний баланс (₴)</label>
+          <input type="number" class="form-control" id="reconcileAmount"
+                 min="0" step="0.01" placeholder="0.00"/>
+          <div class="invalid-feedback">Введіть коректну суму</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Скасувати</button>
+          <button type="button" class="btn btn-primary" id="reconcileSubmit">
+            Зберегти
+            <span id="reconcileSpinner" class="spinner-border spinner-border-sm d-none ms-1"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
@@ -278,6 +310,7 @@
       initPresetBtns();
       initLogout();
       initModal();
+      initReconcileModal();
 
       await loadAll();
     }
@@ -358,12 +391,12 @@
 
     async function loadTransactions() {
       try {
-        const res = await fetch('/api/transactions?' + buildParams());
+        const res = await fetch('/api/transactions?' + buildParams() + '&limit=5&exclude_system=true');
         if (!res.ok) return;
-        const txs = await res.json();
+        const result = await res.json();
 
-        document.getElementById('txBadge').textContent = txs.length;
-        renderTransactions(txs.slice(0, 5));
+        document.getElementById('txBadge').textContent = result.total;
+        renderTransactions(result.data || []);
       } catch (e) {
         console.error('loadTransactions:', e);
       }
@@ -429,6 +462,53 @@
           + '<div class="tx-amount ' + cls + '">' + sign + fmt(t.amount) + '</div>'
           + '</div>';
       }).join('');
+    }
+
+    /* ── reconcile modal ────────────────────────── */
+
+    function initReconcileModal() {
+      document.getElementById('reconcileBtn').addEventListener('click', function() {
+        document.getElementById('reconcileCurrentBalance').textContent =
+          document.getElementById('statBalance').textContent;
+        document.getElementById('reconcileAlert').className = 'alert d-none';
+        const inp = document.getElementById('reconcileAmount');
+        inp.value = '';
+        inp.classList.remove('is-invalid');
+        new bootstrap.Modal(document.getElementById('reconcileModal')).show();
+      });
+
+      document.getElementById('reconcileSubmit').addEventListener('click', async function() {
+        const inp = document.getElementById('reconcileAmount');
+        const val = parseFloat(inp.value);
+        if (isNaN(val) || val < 0) {
+          inp.classList.add('is-invalid');
+          return;
+        }
+        inp.classList.remove('is-invalid');
+
+        const btn     = this;
+        const spinner = document.getElementById('reconcileSpinner');
+        btn.disabled = true;
+        spinner.classList.remove('d-none');
+
+        try {
+          const res = await fetch('/api/wallet/reconcile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target_balance: val }),
+          });
+          if (!res.ok) throw new Error('reconcile failed');
+          bootstrap.Modal.getInstance(document.getElementById('reconcileModal')).hide();
+          await loadAll();
+        } catch {
+          const alertEl = document.getElementById('reconcileAlert');
+          alertEl.className = 'alert alert-danger';
+          alertEl.textContent = 'Помилка при коригуванні балансу';
+        } finally {
+          btn.disabled = false;
+          spinner.classList.add('d-none');
+        }
+      });
     }
 
     /* ── modal ───────────────────────────────────── */
