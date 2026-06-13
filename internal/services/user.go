@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"unicode"
 
 	"github.com/Lynccs/payment-service/internal/app/dto"
 	"github.com/Lynccs/payment-service/internal/app/models"
@@ -12,10 +13,13 @@ import (
 )
 
 var (
-	ErrEmailAlreadyExists = fmt.Errorf("email already exists")
-	ErrPasswordTooShort   = fmt.Errorf("password must be at least 8 characters")
-	ErrInvalidCredentials = fmt.Errorf("invalid email or password")
-	ErrUserNotFound       = fmt.Errorf("user not found")
+	ErrEmailAlreadyExists  = fmt.Errorf("email already exists")
+	ErrPasswordTooShort    = fmt.Errorf("password must be at least 8 characters")
+	ErrPasswordNoUpper     = fmt.Errorf("password must contain at least one uppercase letter")
+	ErrPasswordNoDigit     = fmt.Errorf("password must contain at least one digit")
+	ErrPasswordNoSymbol    = fmt.Errorf("password must contain at least one special character")
+	ErrInvalidCredentials  = fmt.Errorf("invalid email or password")
+	ErrUserNotFound        = fmt.Errorf("user not found")
 )
 
 type userService struct {
@@ -37,8 +41,8 @@ func (s *userService) Register(ctx context.Context, req dto.RegisterRequest) (dt
 		return dto.UserResponse{}, ErrEmailAlreadyExists
 	}
 
-	if len(req.Password) < 8 {
-		return dto.UserResponse{}, ErrPasswordTooShort
+	if err := validatePassword(req.Password); err != nil {
+		return dto.UserResponse{}, err
 	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -88,6 +92,33 @@ func (s *userService) Login(ctx context.Context, req dto.LoginRequest) (dto.User
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt,
 	}, nil
+}
+
+func validatePassword(password string) error {
+	if len(password) < 8 {
+		return ErrPasswordTooShort
+	}
+	var hasUpper, hasDigit, hasSymbol bool
+	for _, ch := range password {
+		switch {
+		case unicode.IsUpper(ch):
+			hasUpper = true
+		case unicode.IsDigit(ch):
+			hasDigit = true
+		case unicode.IsPunct(ch) || unicode.IsSymbol(ch):
+			hasSymbol = true
+		}
+	}
+	if !hasUpper {
+		return ErrPasswordNoUpper
+	}
+	if !hasDigit {
+		return ErrPasswordNoDigit
+	}
+	if !hasSymbol {
+		return ErrPasswordNoSymbol
+	}
+	return nil
 }
 
 func (s *userService) GetProfile(ctx context.Context, userID int) (dto.UserResponse, error) {

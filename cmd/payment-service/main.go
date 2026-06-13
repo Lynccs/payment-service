@@ -34,10 +34,12 @@ func main() {
 	userRepo := postgres.NewUserRepo(db)
 	walletRepo := postgres.NewWalletRepo(db)
 	paymentRepo := postgres.NewPaymentRepo(db)
+	budgetRepo := postgres.NewBudgetRepo(db)
 
 	svc := &service.Services{
 		User:    services.NewUserService(userRepo, walletRepo),
 		Payment: services.NewPaymentService(paymentRepo, walletRepo),
+		Budget:  services.NewBudgetService(budgetRepo, walletRepo),
 	}
 
 	srv := http.NewServer(cfg, log, svc)

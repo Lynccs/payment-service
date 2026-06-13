@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Бюджети — Finio</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link href="/static/css/budgets.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet"/>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="finio-nav">
+    <a class="finio-brand" href="/dashboard">
+      <i class="bi bi-wallet2"></i>Finio
+    </a>
+    <div class="d-flex align-items-center gap-3 me-auto ms-4">
+      <a href="/dashboard"    class="nav-link-item" id="navDashboard">Дашборд</a>
+      <a href="/transactions" class="nav-link-item" id="navTransactions">Транзакції</a>
+      <a href="/budgets"      class="nav-link-item" id="navBudgets">Бюджети</a>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <span class="nav-user-email" id="userEmail"></span>
+      <button id="logoutBtn" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-box-arrow-right me-1"></i>Вийти
+      </button>
+    </div>
+  </nav>
+
+  <main class="container-xl px-3 px-md-4 py-4">
+
+    <!-- Page header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h5 class="fw-semibold mb-0">Бюджети</h5>
+      <button class="btn btn-primary btn-sm px-3" id="addBudgetBtn">
+        <i class="bi bi-plus-lg me-1"></i>Додати бюджет
+      </button>
+    </div>
+
+    <!-- Month switcher -->
+    <div class="mb-4">
+      <div class="month-switcher">
+        <button class="month-nav-btn" id="prevMonth">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <span class="month-label" id="monthLabel"></span>
+        <button class="month-nav-btn" id="nextMonth">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-4">
+        <div class="stat-card stat-budget">
+          <div class="stat-icon"><i class="bi bi-wallet2"></i></div>
+          <div>
+            <div class="stat-label">Загальний бюджет</div>
+            <div class="stat-value" id="statTotal">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="stat-card stat-spent">
+          <div class="stat-icon"><i class="bi bi-arrow-up-circle-fill"></i></div>
+          <div>
+            <div class="stat-label">Витрачено</div>
+            <div class="stat-value" id="statSpent">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="stat-card stat-left" id="statLeftCard">
+          <div class="stat-icon"><i class="bi bi-piggy-bank-fill"></i></div>
+          <div>
+            <div class="stat-label">Залишилось</div>
+            <div class="stat-value" id="statLeft">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Budget list -->
+    <div class="budget-list" id="budgetList">
+      <div class="budget-list-header">
+        <span class="budget-list-title">По категоріях</span>
+      </div>
+      <div id="budgetItems">
+        <div class="budget-empty">Завантаження...</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Add / Edit modal -->
+  <div class="modal fade" id="budgetModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h6 class="modal-title fw-semibold" id="budgetModalLabel">Новий бюджет</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрити"></button>
+        </div>
+
+        <div class="modal-body">
+          <div id="budgetAlert" class="alert d-none mb-3" role="alert"></div>
+
+          <div class="mb-3">
+            <label class="form-label">Категорія</label>
+            <select id="budgetCategory"></select>
+            <div class="invalid-feedback" id="catError">Оберіть категорію</div>
+          </div>
+
+          <div class="mb-1">
+            <label for="budgetAmount" class="form-label">Ліміт (₴)</label>
+            <input type="number" class="form-control" id="budgetAmount"
+                   min="1" step="100" placeholder="0.00"/>
+            <div class="invalid-feedback">Введіть коректну суму</div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Скасувати</button>
+          <button type="button" class="btn btn-primary" id="budgetSubmit">
+            Зберегти
+            <span id="budgetSpinner" class="spinner-border spinner-border-sm d-none ms-1"></span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete confirmation modal -->
+  <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-body text-center py-4 px-4">
+          <div class="mb-3">
+            <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size:2rem"></i>
+          </div>
+          <p class="mb-1 fw-semibold">Ви впевнені?</p>
+          <p class="text-muted small mb-0">Бюджет для цієї категорії буде видалено</p>
+        </div>
+        <div class="modal-footer justify-content-center border-0 pt-0 pb-4 gap-2">
+          <button type="button" class="btn btn-light btn-sm px-4" data-bs-dismiss="modal">Скасувати</button>
+          <button type="button" class="btn btn-danger btn-sm px-4" id="confirmDelete">Видалити</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+  <script>
+    'use strict';
+
+    /* ── state ───────────────────────────────────── */
+
+    const now  = new Date();
+    const S = { year: now.getFullYear(), month: now.getMonth() + 1 };
+
+    let tsCategory = null;
+    let editBudgetID = null;
+    let deleteBudgetID = null;
+    let allExpenseCategories = [];
+    let currentBudgets = [];
+
+    /* ── helpers ─────────────────────────────────── */
+
+    function periodStr() {
+      return S.year + '-' + String(S.month).padStart(2, '0') + '-01';
+    }
+
+    const MONTHS_UK = [
+      'Січень','Лютий','Березень','Квітень','Травень','Червень',
+      'Липень','Серпень','Вересень','Жовтень','Листопад','Грудень',
+    ];
+
+    function fmt(n) {
+      return '₴ ' + Number(n).toLocaleString('uk-UA', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2,
+      });
+    }
+
+    function esc(s) {
+      return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+
+    /* ── init ────────────────────────────────────── */
+
+    async function init() {
+      try {
+        const res = await fetch('/api/users/me');
+        if (res.status === 401) { location.href = '/login'; return; }
+        const user = await res.json();
+        document.getElementById('userEmail').textContent = user.email;
+        document.getElementById('navBudgets').classList.add('active');
+      } catch {
+        location.href = '/login';
+        return;
+      }
+
+      initMonthSwitcher();
+      initLogout();
+      initModal();
+      initDeleteModal();
+
+      await Promise.all([loadExpenseCategories(), loadBudgets()]);
+    }
+
+    /* ── month switcher ──────────────────────────── */
+
+    function updateMonthLabel() {
+      document.getElementById('monthLabel').textContent =
+        MONTHS_UK[S.month - 1] + ' ' + S.year;
+    }
+
+    function initMonthSwitcher() {
+      updateMonthLabel();
+      document.getElementById('prevMonth').addEventListener('click', function() {
+        S.month--;
+        if (S.month < 1) { S.month = 12; S.year--; }
+        updateMonthLabel();
+        loadBudgets();
+      });
+      document.getElementById('nextMonth').addEventListener('click', function() {
+        S.month++;
+        if (S.month > 12) { S.month = 1; S.year++; }
+        updateMonthLabel();
+        loadBudgets();
+      });
+    }
+
+    /* ── logout ──────────────────────────────────── */
+
+    function initLogout() {
+      document.getElementById('logoutBtn').addEventListener('click', async function() {
+        await fetch('/api/auth/logout', { method: 'POST' }).catch(function() {});
+        location.href = '/login';
+      });
+    }
+
+    /* ── load expense categories ─────────────────── */
+
+    async function loadExpenseCategories() {
+      try {
+        const res  = await fetch('/api/payment-categories?is_income=false');
+        allExpenseCategories = await res.json();
+      } catch(e) {
+        console.error('loadExpenseCategories:', e);
+      }
+    }
+
+    /* ── load & render budgets ───────────────────── */
+
+    async function loadBudgets() {
+      document.getElementById('budgetItems').innerHTML =
+        '<div class="budget-empty">Завантаження...</div>';
+
+      try {
+        const res = await fetch('/api/budgets?period=' + periodStr());
+        if (!res.ok) throw new Error('http ' + res.status);
+        currentBudgets = await res.json();
+        renderStats(currentBudgets);
+        renderBudgets(currentBudgets);
+      } catch(e) {
+        console.error('loadBudgets:', e);
+        document.getElementById('budgetItems').innerHTML =
+          '<div class="budget-empty">Помилка завантаження</div>';
+      }
+    }
+
+    function renderStats(budgets) {
+      let total = 0, spent = 0;
+      budgets.forEach(function(b) { total += b.limit_amount; spent += b.spent; });
+      const left = total - spent;
+
+      document.getElementById('statTotal').textContent = fmt(total);
+      document.getElementById('statSpent').textContent = fmt(spent);
+
+      const leftEl     = document.getElementById('statLeft');
+      const leftCard   = document.getElementById('statLeftCard');
+      leftEl.textContent = fmt(Math.abs(left));
+      if (left < 0) {
+        leftEl.classList.add('text-danger');
+        leftCard.classList.add('over');
+      } else {
+        leftEl.classList.remove('text-danger');
+        leftCard.classList.remove('over');
+      }
+    }
+
+    function renderBudgets(budgets) {
+      const el = document.getElementById('budgetItems');
+      if (!budgets.length) {
+        el.innerHTML = '<div class="budget-empty">Бюджети ще не встановлені</div>';
+        return;
+      }
+
+      const sorted = budgets.slice().sort(function(a, b) {
+        const pctA = a.limit_amount > 0 ? a.spent / a.limit_amount : 0;
+        const pctB = b.limit_amount > 0 ? b.spent / b.limit_amount : 0;
+        return pctB - pctA;
+      });
+
+      el.innerHTML = sorted.map(function(b) {
+        const pct     = b.limit_amount > 0
+          ? Math.round((b.spent / b.limit_amount) * 100)
+          : 0;
+        const barW    = clamp(pct, 0, 100);
+        const isOver  = pct > 100;
+        const catIcon = b.category_icon ? esc(b.category_icon) + ' ' : '';
+
+        return '<div class="budget-item" data-id="' + b.id + '">'
+          + '<div class="budget-item-top">'
+          +   '<span class="budget-cat-name">' + catIcon + esc(b.category_name) + '</span>'
+          +   '<div class="budget-actions">'
+          +     '<button class="btn-edit" data-budget-edit="' + b.id + '" title="Редагувати">'
+          +       '<i class="bi bi-pencil"></i>'
+          +     '</button>'
+          +     '<button class="btn-del" data-budget-delete="' + b.id + '" title="Видалити">'
+          +       '<i class="bi bi-trash3"></i>'
+          +     '</button>'
+          +   '</div>'
+          + '</div>'
+          + '<div class="budget-item-info">'
+          +   '<span class="budget-spent-text">'
+          +     fmt(b.spent) + ' витрачено з ' + fmt(b.limit_amount)
+          +   '</span>'
+          +   '<span class="budget-pct' + (isOver ? ' over' : '') + '">' + pct + '%</span>'
+          + '</div>'
+          + '<div class="budget-bar">'
+          +   '<div class="budget-bar-fill' + (isOver ? ' over' : '') + '" style="width:' + barW + '%"></div>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+    }
+
+    /* ── modal ───────────────────────────────────── */
+
+    function initModal() {
+      tsCategory = new TomSelect('#budgetCategory', {
+        create: false,
+        placeholder: 'Оберіть категорію',
+        allowEmptyOption: false,
+        onFocus: function() {
+          document.getElementById('budgetCategory').closest('.mb-3')
+            .querySelector('select').classList.remove('is-invalid');
+          if (tsCategory) tsCategory.wrapper.classList.remove('is-invalid');
+        },
+        render: {
+          optgroup_header: function(data, escape) {
+            return '<div class="ts-group-header"><span>' + escape(data.label) + '</span></div>';
+          },
+        },
+      });
+
+      document.getElementById('addBudgetBtn').addEventListener('click', function() {
+        openModal(null);
+      });
+
+      document.addEventListener('click', function(e) {
+        const editBtn = e.target.closest('[data-budget-edit]');
+        if (editBtn) {
+          const id = parseInt(editBtn.dataset.budgetEdit, 10);
+          const b  = currentBudgets.find(function(x) { return x.id === id; });
+          if (b) openModal(b);
+          return;
+        }
+        const delBtn = e.target.closest('[data-budget-delete]');
+        if (delBtn) {
+          deleteBudgetID = parseInt(delBtn.dataset.budgetDelete, 10);
+          new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+      });
+
+      document.getElementById('budgetModal').addEventListener('hidden.bs.modal', function() {
+        editBudgetID = null;
+        document.getElementById('budgetModalLabel').textContent = 'Новий бюджет';
+        document.getElementById('budgetSubmit').childNodes[0].textContent = 'Зберегти ';
+        document.getElementById('budgetAmount').value = '';
+        document.getElementById('budgetAmount').classList.remove('is-invalid');
+        document.getElementById('budgetAlert').className = 'alert d-none';
+        if (tsCategory) {
+          tsCategory.wrapper.classList.remove('is-invalid');
+          tsCategory.clear(true);
+          tsCategory.enable();
+        }
+      });
+
+      document.getElementById('budgetSubmit').addEventListener('click', submitBudget);
+    }
+
+    function openModal(budget) {
+      editBudgetID = budget ? budget.id : null;
+
+      const label = document.getElementById('budgetModalLabel');
+      const submit = document.getElementById('budgetSubmit');
+      label.textContent  = budget ? 'Редагувати бюджет' : 'Новий бюджет';
+      submit.childNodes[0].textContent = budget ? 'Зберегти ' : 'Додати ';
+
+      // populate category dropdown — exclude already budgeted categories (except current)
+      tsCategory.clearOptions();
+      tsCategory.clear(true);
+
+      const usedIDs = new Set(
+        currentBudgets
+          .filter(function(b) { return !budget || b.id !== budget.id; })
+          .map(function(b) { return b.category_id; })
+      );
+
+      const groups = {};
+      allExpenseCategories.forEach(function(c) {
+        if (!usedIDs.has(c.id)) {
+          if (!groups[c.group_name]) groups[c.group_name] = [];
+          groups[c.group_name].push(c);
+        }
+      });
+      Object.keys(groups).forEach(function(groupName) {
+        tsCategory.addOptionGroup(groupName, { label: groupName });
+        groups[groupName].forEach(function(c) {
+          const prefix = c.icon ? c.icon + ' ' : '';
+          tsCategory.addOption({ value: String(c.id), text: prefix + c.name, optgroup: groupName });
+        });
+      });
+
+      if (budget) {
+        tsCategory.addOption({
+          value: String(budget.category_id),
+          text: (budget.category_icon ? budget.category_icon + ' ' : '') + budget.category_name,
+        });
+        tsCategory.setValue(String(budget.category_id), true);
+        tsCategory.disable();
+        document.getElementById('budgetAmount').value = budget.limit_amount;
+      } else {
+        tsCategory.enable();
+      }
+
+      new bootstrap.Modal(document.getElementById('budgetModal')).show();
+    }
+
+    async function submitBudget() {
+      const alertEl = document.getElementById('budgetAlert');
+      alertEl.className = 'alert d-none';
+
+      const catVal    = tsCategory.getValue();
+      const amountVal = document.getElementById('budgetAmount').value;
+      const amount    = parseFloat(amountVal);
+
+      let valid = true;
+      if (!catVal) {
+        tsCategory.wrapper.classList.add('is-invalid');
+        valid = false;
+      }
+      if (!amountVal || isNaN(amount) || amount <= 0) {
+        document.getElementById('budgetAmount').classList.add('is-invalid');
+        valid = false;
+      }
+      if (!valid) return;
+
+      document.getElementById('budgetAmount').classList.remove('is-invalid');
+      if (tsCategory) tsCategory.wrapper.classList.remove('is-invalid');
+
+      const btn     = document.getElementById('budgetSubmit');
+      const spinner = document.getElementById('budgetSpinner');
+      btn.disabled = true;
+      spinner.classList.remove('d-none');
+
+      try {
+        let res;
+        if (editBudgetID) {
+          res = await fetch('/api/budgets/' + editBudgetID, {
+            method:  'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ limit_amount: amount }),
+          });
+        } else {
+          res = await fetch('/api/budgets', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ category_id: parseInt(catVal, 10), limit_amount: amount, period: periodStr() }),
+          });
+        }
+
+        if (!res.ok) {
+          const err = await res.json().catch(function() { return {}; });
+          alertEl.className = 'alert alert-danger';
+          alertEl.textContent = err.error || 'Помилка збереження';
+          return;
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('budgetModal')).hide();
+        await loadBudgets();
+      } catch {
+        alertEl.className = 'alert alert-danger';
+        alertEl.textContent = "Помилка з'єднання з сервером";
+      } finally {
+        btn.disabled = false;
+        spinner.classList.add('d-none');
+      }
+    }
+
+    /* ── delete modal ────────────────────────────── */
+
+    function initDeleteModal() {
+      document.getElementById('confirmDelete').addEventListener('click', async function() {
+        if (!deleteBudgetID) return;
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        try {
+          const res = await fetch('/api/budgets/' + deleteBudgetID, { method: 'DELETE' });
+          if (!res.ok && res.status !== 204) throw new Error('delete failed');
+          bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+          deleteBudgetID = null;
+          await loadBudgets();
+        } catch {
+          btn.disabled = false;
+          btn.textContent = 'Видалити';
+        }
+      });
+
+      document.getElementById('deleteModal').addEventListener('hidden.bs.modal', function() {
+        const btn = document.getElementById('confirmDelete');
+        btn.disabled = false;
+        btn.textContent = 'Видалити';
+        deleteBudgetID = null;
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>

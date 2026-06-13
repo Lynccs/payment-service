@@ -49,8 +49,11 @@ func (h *UserHandler) Register(c *gin.Context) {
 		switch err {
 		case services.ErrEmailAlreadyExists:
 			c.JSON(http.StatusConflict, gin.H{"error": "email already exists"})
-		case services.ErrPasswordTooShort:
-			c.JSON(http.StatusBadRequest, gin.H{"error": "password too short"})
+		case services.ErrPasswordTooShort,
+			services.ErrPasswordNoUpper,
+			services.ErrPasswordNoDigit,
+			services.ErrPasswordNoSymbol:
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		}
