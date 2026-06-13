@@ -191,6 +191,18 @@
         setInvalid('password', 'Пароль має містити мінімум 8 символів');
         return;
       }
+      if (!/[A-Z]/.test(password)) {
+        setInvalid('password', 'Пароль має містити хоча б одну велику літеру');
+        return;
+      }
+      if (!/[0-9]/.test(password)) {
+        setInvalid('password', 'Пароль має містити хоча б одну цифру');
+        return;
+      }
+      if (!/[^A-Za-z0-9]/.test(password)) {
+        setInvalid('password', 'Пароль має містити хоча б один спеціальний символ');
+        return;
+      }
 
       if (password !== confirmPassword) {
         setInvalid('password', 'Паролі не співпадають');
@@ -213,6 +225,8 @@
         if (!res.ok) {
           if (data.error === 'email already exists') {
             setInvalid('email', 'Акаунт з таким email вже існує');
+          } else if (res.status === 400 && data.error) {
+            setInvalid('password', data.error);
           } else {
             showAlert('Помилка реєстрації. Спробуйте ще раз');
           }

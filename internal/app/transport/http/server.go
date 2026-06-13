@@ -27,12 +27,14 @@ func NewServer(cfg *config.Config, log *slog.Logger, services *service.Services)
 
 	userHandler := handlers.NewUserHandler(services.User, log, cfg.JWT.Secret, cfg.JWT.TTL)
 	paymentHandler := handlers.NewPaymentHandler(services.Payment, log)
+	budgetHandler := handlers.NewBudgetHandler(services.Budget, log)
 
 	r.Static("/static", "./web/static")
 	r.StaticFile("/login", "./web/templates/login.html")
 	r.StaticFile("/register", "./web/templates/register.html")
 	r.StaticFile("/dashboard", "./web/templates/dashboard.html")
 	r.StaticFile("/transactions", "./web/templates/transactions.html")
+	r.StaticFile("/budgets", "./web/templates/budgets.html")
 
 	api := r.Group("/api")
 	{
@@ -57,6 +59,11 @@ func NewServer(cfg *config.Config, log *slog.Logger, services *service.Services)
 			protected.GET("/payment-categories", paymentHandler.GetCategories)
 			protected.GET("/payment-methods", paymentHandler.GetMethods)
 			protected.POST("/wallet/reconcile", paymentHandler.ReconcileBalance)
+
+			protected.GET("/budgets", budgetHandler.ListBudgets)
+			protected.POST("/budgets", budgetHandler.CreateBudget)
+			protected.PUT("/budgets/:id", budgetHandler.UpdateBudget)
+			protected.DELETE("/budgets/:id", budgetHandler.DeleteBudget)
 		}
 	}
 
